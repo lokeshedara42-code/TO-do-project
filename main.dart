@@ -12,7 +12,6 @@ class TodoApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'To-Do App',
       theme: ThemeData(
         colorSchemeSeed: Colors.blue,
         useMaterial3: true,
@@ -22,19 +21,69 @@ class TodoApp extends StatelessWidget {
   }
 }
 
-class TodoHomePage extends StatelessWidget {
+class TodoHomePage extends StatefulWidget {
   const TodoHomePage({super.key});
+
+  @override
+  State<TodoHomePage> createState() => _TodoHomePageState();
+}
+
+class _TodoHomePageState extends State<TodoHomePage> {
+  final TextEditingController controller = TextEditingController();
+  final List<String> tasks = [];
+
+  void addTask() {
+    final text = controller.text.trim();
+
+    if (text.isEmpty) return;
+
+    setState(() {
+      tasks.add(text);
+      controller.clear();
+    });
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My To-Do List'),
-      ),
-      body: const Center(
-        child: Text(
-          'Welcome! Add your tasks here.',
-          style: TextStyle(fontSize: 18),
+      appBar: AppBar(title: const Text('My To-Do List')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Enter a task',
+                border: OutlineInputBorder(),
+              ),
+              onSubmitted: (_) => addTask(),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: addTask,
+                child: const Text('Add Task'),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: tasks.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(tasks[index]),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
