@@ -1,8 +1,98 @@
 
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  runApp(const TodoApp());
+}
+
+class TodoApp extends StatelessWidget {
+  const TodoApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorSchemeSeed: Colors.blue,
+        useMaterial3: true,
+      ),
+      home: const TodoHomePage(),
+    );
+  }
+}
+
+class TodoTask {
+  String title;
+  bool completed;
+
+  TodoTask(this.title, {this.completed = false});
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'completed': completed,
+      };
+
+  factory TodoTask.fromJson(Map<String, dynamic> json) {
+    return TodoTask(
+      json['title'] as String,
+      completed: json['completed'] as bool? ?? false,
+    );
+  }
+}
+
+class TodoHomePage extends StatefulWidget {
+  const TodoHomePage({super.key});
+
+  @override
+  State<TodoHomePage> createState() => _TodoHomePageState();
+}
+
 class _TodoHomePageState extends State<TodoHomePage> {
   final controller = TextEditingController();
   final List<TodoTask> tasks = [];
   String filter = 'All';
+
+  @override
+  void initState() {
+    super.initState();
+    loadTasks();
+  }
+
+  Future<void> loadTasks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('tasks');
+
+    if (saved == null) return;
+
+    try {
+      final List<dynamic> decoded = jsonDecode(saved);
+
+      if (!mounted) return;
+      setState(() {
+        tasks
+          ..clear()
+          ..addAll(
+            decoded.map(
+              (item) => TodoTask.fromJson(
+                Map<String, dynamic>.from(item as Map),
+              ),
+            ),
+          );
+      });
+    } catch (_) {
+      // Keep the app usable if saved data is invalid.
+    }
+  }
+
+  Future<void> saveTasks() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'tasks',
+      jsonEncode(tasks.map((task) => task.toJson()).toList()),
+    );
+  }
 
   void addTask() {
     final text = controller.text.trim();
@@ -12,14 +102,18 @@ class _TodoHomePageState extends State<TodoHomePage> {
       tasks.add(TodoTask(text));
       controller.clear();
     });
-  }
 
-  void deleteTask(TodoTask task) {
-    setState(() => tasks.remove(task));
+    saveTasks();
   }
 
   void toggleTask(TodoTask task, bool? value) {
     setState(() => task.completed = value ?? false);
+    saveTasks();
+  }
+
+  void deleteTask(TodoTask task) {
+    setState(() => tasks.remove(task));
+    saveTasks();
   }
 
   @override
