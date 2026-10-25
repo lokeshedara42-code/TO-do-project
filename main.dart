@@ -1,9 +1,7 @@
 
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const TodoApp());
-}
+void main() => runApp(const TodoApp());
 
 class TodoApp extends StatelessWidget {
   const TodoApp({super.key});
@@ -21,6 +19,13 @@ class TodoApp extends StatelessWidget {
   }
 }
 
+class TodoTask {
+  String title;
+  bool completed;
+
+  TodoTask(this.title, {this.completed = false});
+}
+
 class TodoHomePage extends StatefulWidget {
   const TodoHomePage({super.key});
 
@@ -29,17 +34,22 @@ class TodoHomePage extends StatefulWidget {
 }
 
 class _TodoHomePageState extends State<TodoHomePage> {
-  final TextEditingController controller = TextEditingController();
-  final List<String> tasks = [];
+  final controller = TextEditingController();
+  final List<TodoTask> tasks = [];
 
   void addTask() {
     final text = controller.text.trim();
-
     if (text.isEmpty) return;
 
     setState(() {
-      tasks.add(text);
+      tasks.add(TodoTask(text));
       controller.clear();
+    });
+  }
+
+  void toggleTask(int index, bool? value) {
+    setState(() {
+      tasks[index].completed = value ?? false;
     });
   }
 
@@ -66,19 +76,27 @@ class _TodoHomePageState extends State<TodoHomePage> {
               onSubmitted: (_) => addTask(),
             ),
             const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: addTask,
-                child: const Text('Add Task'),
-              ),
+            ElevatedButton(
+              onPressed: addTask,
+              child: const Text('Add Task'),
             ),
             Expanded(
               child: ListView.builder(
                 itemCount: tasks.length,
                 itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(tasks[index]),
+                  final task = tasks[index];
+
+                  return CheckboxListTile(
+                    title: Text(
+                      task.title,
+                      style: TextStyle(
+                        decoration: task.completed
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                      ),
+                    ),
+                    value: task.completed,
+                    onChanged: (value) => toggleTask(index, value),
                   );
                 },
               ),
